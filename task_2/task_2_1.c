@@ -2,23 +2,25 @@
 #include <malloc.h>
 #include <stdlib.h>
 
-void fill_massive(int massive[], int elem)
+void fill_massive(int *massive, size_t size, int elem)
 {
-	printf("size of massive in foo1 = %zu", sizeof(massive)/sizeof(massive[0]));
-	for (size_t i = 0; i < sizeof(massive)/sizeof(massive[0]); i++)
+	for (size_t i = 0; i < size; i++)
 	{
-		massive[i] = elem + (int )i;
-		printf("creating massive element %zu = %d\n", i, massive[i]);
+		*massive = elem + (int )i;// changing value on *massive
+		//printf("creating massive element %zu = %d\n", i, *massive);
+		massive = massive + 1;//change pointer on one size
 	}
 }
 
-void print_massive(int massive[], int N)
+void print_massive(int *massive, size_t size, int N)
 {
-	for (size_t i = 0; i < sizeof(massive)/sizeof(massive[0]); i++)
+	for (size_t i = 0; i < size; i++)
         {
-		if ((i + 1) % N == 0) printf("\n");
-                printf("%d", massive[i]);
+		if (i % N == 0) printf("\n");
+                printf("%d ", *massive);
+		massive = massive + 1;//change pointer on one size
         }
+	printf("\n");
 
 }
 
@@ -26,15 +28,11 @@ int main()
 {	
 	int N; //size of matrix
 	int elem = 1; //first elem of matrix
-	int *ptr; //pointer on massive
 	printf("Enter N?    ");
 	scanf("%d", &N);
-	//int quantity = N * N; // number of elements
-	ptr = (int*)malloc(N * N * sizeof(int)); // member for massive
 	int massive[N*N];
-//	int a* = malloc(N * N * sizeof(int));
 	printf("size of massive = %zu\n", sizeof(massive)/sizeof(massive[0]));
-	fill_massive(massive, elem);
-	//print_massive(ptr, N);
+	fill_massive(massive, sizeof(massive)/sizeof(massive[0]), elem);
+	print_massive(massive, sizeof(massive)/sizeof(massive[0]), N);
 	return 0;
 }
