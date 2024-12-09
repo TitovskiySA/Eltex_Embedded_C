@@ -1,43 +1,67 @@
 #include <stdio.h>
+#include <stdlib.h>
+
+#define MAXSIZE 100
+short str_len(char *str){
+	short end = 0;
+        //printf("Entered string = %s\n", str);
+        for (int i = 0; i < MAXSIZE; i++){
+                if (*str == '\n'){
+			*str = '\0';
+                        //printf("\nlengh founded %d\n", end);
+                        break;
+                }
+                else{
+                        //printf("%c", *str);
+                        end++;
+                        str++;
+                }
+        }
+	return end;
+}
 
 int main(){
-	char massive[50] = "0000", find[50] = "0000";
-	char *massive_p = massive, *padd_p = massive;
-	char *find_p = find, *padd_find = find;
-	printf("Enter some string not more than 50 symbols\n");
-	scanf("%s", massive);
+	char *massive = malloc(MAXSIZE);
+	char *find = malloc(MAXSIZE);
+	char *massive_p = massive;
+	char *find_p = find;
+	printf("Enter some string not more than 100 symbols\n");
+	fgets(massive, MAXSIZE, stdin);
 	printf("Enter some substring which we will find\n");
-	scanf("%s", find);
-	int Num_founded = 0;
+	fgets(find, MAXSIZE, stdin);
+	printf("Entered massive = %s, len = %d\n", massive, str_len(massive));
+	printf("Entered find = %s, len = %d\n", find, str_len(find));
 
-	for (size_t i = 0; i < sizeof(massive)/sizeof(massive[0]); i++)
+
+	for (short i = 0; i < str_len(massive); i++)
 	{
-		if (*massive_p == '\0') goto fault;
-		for (size_t ii = 0; ii < sizeof(find)/sizeof(find[0]); ii++)
+		//if (*massive_p == '\0') goto fault;
+		if (*massive == '\0') goto fault;
+		for (short ii = 0; ii < str_len(find_p); ii++)
 		{	
-			//printf ("comp str %c with susctr %c\n", *massive_p, *find_p);
-			if (*find_p == '\0')
+			//printf ("comp str %c with substr %c\n", *massive, *find);
+			if (*find == '\0')
 			{
-				printf("Substring starts in pos = %lu\n", i);
+				printf("Substring starts in pos = %d\n", i);
 				goto success;
 			}
-			if (*find_p == *massive_p)
+			if (*find == *massive)
 			{	
-			//	printf("%c equal in num = %lu\n", *find_p, i);
-				find_p++;//if success go to compare text element
-				massive_p++;
+				//printf("%c equal in num = %d\n", *find, i);
+				find++;//if success go to compare text element
+				massive++;
 			}
 				
 			else 
 			{
-			//	printf("%c (str) not equal %c (substr) in num = %lu\n", *massive_p, *find_p, i);
-				massive_p = padd_p;//if not success we must return to our element from main cycle
-				find_p = padd_find;//if not success we must return to first element of substring
+				printf("%c (str) not equal %c (substr) in num = %d\n", *massive, *find, i);
+				massive = massive_p;//if not success we must return to our element from main cycle
+				find = find_p;//if not success we must return to first element of substring
 				break;
 			} 
 		}
+		massive++;
 		massive_p++;
-		padd_p++;
 	}
 	
 	fault:
@@ -46,5 +70,10 @@ int main(){
 	success:
 		printf("success founded\n");
 		return 0;
+
+//	return 0;
 }
+
+
+
 
