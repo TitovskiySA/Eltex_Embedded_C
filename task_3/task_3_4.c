@@ -22,9 +22,19 @@ short str_len(char *str){
 
 int main(){
 	char *massive = malloc(MAXSIZE);
+	if (massive == NULL){
+		printf("Error malloc for massive\n");
+		return 1;
+	}
 	char *find = malloc(MAXSIZE);
+	if (find == NULL){
+		printf("Error malloc for find\n");
+		return 1;
+	}
 	char *massive_p = massive;
+	char *begin_massive = massive;
 	char *find_p = find;
+	char *begin_find = find;
 	printf("Enter some string not more than 100 symbols\n");
 	fgets(massive, MAXSIZE, stdin);
 	printf("Enter some substring which we will find\n");
@@ -36,13 +46,19 @@ int main(){
 	for (short i = 0; i < str_len(massive); i++)
 	{
 		//if (*massive_p == '\0') goto fault;
-		if (*massive == '\0') goto fault;
+		if (*massive == '\0'){
+			free(begin_massive);
+			free(begin_find);
+			goto fault;
+		}
 		for (short ii = 0; ii < str_len(find_p); ii++)
 		{	
 			//printf ("comp str %c with substr %c\n", *massive, *find);
 			if (*find == '\0')
 			{
 				printf("Substring starts in pos = %d\n", i);
+				free(begin_massive);
+				free(begin_find);
 				goto success;
 			}
 			if (*find == *massive)
