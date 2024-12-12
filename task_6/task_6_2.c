@@ -3,76 +3,59 @@
 
 #define MAXSTR = 100
 
-//struct somestr{
-//	int num;
-//	*char str;
-//};
-
+struct somestruct{
+	int num;
+	*char str;
+};
 
 char *enter_dynamic_string(int *len){
-	printf("\nstart of enter_dyn\n");
-	*len = 0; // empty string
-	int len_mem = 1; //size of string with symbol "\0"
+	//printf("\nstart of enter_dyn\n");
 	char *str = (char*)malloc(sizeof(char)); // creating pointer on our str
-	char symb;
-	printf("\nscanf symb\n");
-	fgets(&symb, sizeof(char), stdin); // enter some symbol
-	printf("\nend of getchar\n");
-
-	//end of string will be "\n"
-	while (symb != '\n'){
-		printf("\n--iter--\n");
-		str[(*len)++] = symb; //adding to string entered symbol, len is growing
-		len_mem = len_mem++; //so increasing size with symbol "\0"
-		str = (char*)realloc(str, len_mem * sizeof(char)); //increasing memory for string
-		fgets(&symb, sizeof(char), stdin); //ask for new symbol
-	} 
-	
-	len_mem++;
-	str = (char*)realloc(str, len_mem * (sizeof(char)));
-	str[*len] = '\0'; // add end of string
-	return str; // return pointer on our string
-
+	int symb;
+	str[0] = '\0'; // str must always have this at the end
+	int i = 0;
+	for (;;){
+		if (symb == '\n') break; // end of entered string
+		str = realloc(str, (i + 2) * sizeof(char)); // memory for our string + ending symbol
+		symb = getchar(); // enter one char
+		str[i] = (char)symb; // writing our symbol in string
+		str[i+1] = '\0'; // adding finishing symbol
+		i++; // next cycle
+	}
+	*len = i; // store of lengh of string	
+	return str;
 }
 
 void task(){
-	int MSize = 0;
-	printf("Enter size of massive\n");
-	scanf("%d", &MSize);
-	
-	for (int i = 0; i < MSize; i++){
-		printf("\nEnter element #%d\n", i);
-		printf("Enter number of struct: ");
-		int num = 0;
+	int mass_len = 0;
+	int size = sizeof(struct somestruct);
+	struct somestruct *massive = (struct somestruct *)malloc(size);
+        struct somestruct *massive_begin = massive;	
+	int num = 0;
+	int str_len = 0;
+	//char *str;
+	printf("Enter number of massive elements\n");
+	scanf("%d", &mass_len);
+	for (int i = 0; i < mass_len; i++){
+		printf("\nEnter .num for #%d item: ", i);
 		scanf("%d", &num);
-		printf("\nEnter string of struct: ");
-		int len;
-		char *str = enter_dynamic_string(&len);
-		printf("you entered: %d, %s", num, str);
-		free(str); 
-
-	}
-
-
-	/*struct somestr *massive = (struct somestr*)calloc(MSize, sizeof(struct somestr));
-	if (massive == NULL){
-		printf("Error allocate memory\n");
-		return;
-	}
-	struct somestr *start_massive = massive;
-	for (int i = 0; i < MSize; i++){
-		int i_char = i % 100;
-		if (i % 100 > 73) i_char = i % 100 - 73; //this is for beautiful char
-		struct somestr item = {.num = i, .symb = i_char + 58};
-		*massive = item; 
-		printf("%d, %c \n", massive -> num, massive -> symb);
+		str_len = 0;
+		printf("\nEnter .str for #%d item: ", i);
+		char *str = enter_dynamic_string(&str_len);
+		//massive = struct somestr elem;
+		massive -> num = num;
+		massive -> str = str;
+		printf("\n struct #%d: %d %s", i, num, str);
+		size = size + sizeof(struct somestruct);
+		massive = realloc(massive_begin, size);
+		printf("\n Go to next element\n");
 		massive++;
-	}*/
 
-	printf("\n");
-//	free(start_massive);
-	return;
-}
+	}
+
+	free(massive_begin);
+        return;	
+	}
 
 int main(){
 	task();
