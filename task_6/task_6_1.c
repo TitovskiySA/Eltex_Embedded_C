@@ -6,6 +6,10 @@ void task(){
 	printf("Enter size of massive\n");
 	scanf("%d", &MSize);
 	int *massive = malloc(MSize * sizeof(int));
+	if (massive == NULL){
+		printf("Error allocate memory\n");
+		return;
+	}
 	int *start_massive = massive;
 	for (int i = 0; i < MSize; i++){
 		*massive = i + 10;
