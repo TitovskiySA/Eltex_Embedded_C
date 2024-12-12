@@ -16,7 +16,7 @@ char *enter_dynamic_string(int *len){
 	char *str = (char*)malloc(sizeof(char)); // creating pointer on our str
 	char symb;
 	printf("\nscanf symb\n");
-	symb = getchar(); // enter some symbol
+	fgets(&symb, sizeof(char), stdin); // enter some symbol
 	printf("\nend of getchar\n");
 
 	//end of string will be "\n"
@@ -25,7 +25,7 @@ char *enter_dynamic_string(int *len){
 		str[(*len)++] = symb; //adding to string entered symbol, len is growing
 		len_mem = len_mem++; //so increasing size with symbol "\0"
 		str = (char*)realloc(str, len_mem * sizeof(char)); //increasing memory for string
-		symb = getchar(); //ask for new symbol
+		fgets(&symb, sizeof(char), stdin); //ask for new symbol
 	} 
 	
 	len_mem++;
