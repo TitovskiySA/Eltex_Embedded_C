@@ -7,13 +7,16 @@ struct some{
 };
 
 void enter_dynamic_string(char ** str_p){ //foo saves in this pointer address where entered dynamic string store
-        char *str = (char*)malloc(sizeof(char)); // creating pointer on our str
+        char *str = (char*)malloc(sizeof(char) * 2); // creating pointer on our str
         int symb; // getchar returns int
-        str[0] = '\0'; // it must always have this at the end of string
-        int i = 0; //for cycle
-	while (getchar() == '\n'){//this cycle delete all \n symbols
-		//printf("\ndeleting some empty symbol");
+	for (;;){
+		symb = getchar();
+		if (symb != '\n') break; // if read not empty symbol, it is first entered by user char
+		//else printf("\nignoring some empty symb");
 	}
+	str[0] = symb; // this symbol will be first in our string
+	str[1] = '\0'; // at the end must be this symbol - EOS
+	int i = 1; // for next cycle
         for (;;){
                 if (symb == '\n') break; // end of entered string
                 str = realloc(str, (i + 2) * sizeof(char)); // memory for our string + ending symbol
@@ -62,12 +65,16 @@ void task(){
 	massive = massive_begin;
 	for (int i = 0; i < mass_len; i++){
 		printf("\nstruct #%d: %d, %s", i, massive->num, *(massive->str));
-		free(massive->str); //free memory of string
+		free(*(massive->str)); //free memory of string
+		*(massive->str) = NULL;
+		free(massive->str); //free memory for pointer on string
+		massive->str = NULL;
 		massive++;
 	}
 	printf("\n");
 
 	free(massive_begin); //free memory of massive
+	massive_begin = NULL;
         return;	
 	}
 
