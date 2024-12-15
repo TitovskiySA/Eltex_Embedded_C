@@ -2,13 +2,16 @@
 #include <stdlib.h>
 
 void enter_dynamic_string(char ** str_p){ //foo saves in this pointer address where entered dynamic string store
-        char *str = (char*)malloc(sizeof(char)); // creating pointer on our str
+        char *str = (char*)malloc(sizeof(char) * 2); // creating pointer on our str
         int symb; // getchar returns int
-        str[0] = '\0'; // it must always have this at the end of string
-        int i = 0; //for cycle
-	while (getchar() == '\n'){//this cycle delete all \n symbols
-		//printf("\ndeleting some empty symbol");
-	}
+        for (;;){
+                symb = getchar();
+                if (symb != '\n') break; // if read not empty symbol, it is first entered by user char
+                //else printf("\nignoring some empty symb");
+        }
+        str[0] = symb; // this symbol will be first in our string
+        str[1] = '\0'; // at the end must be this symbol - EOS
+        int i = 1; // for next cycle
         for (;;){
                 if (symb == '\n') break; // end of entered string
                 str = realloc(str, (i + 2) * sizeof(char)); // memory for our string + ending symbol
@@ -16,14 +19,14 @@ void enter_dynamic_string(char ** str_p){ //foo saves in this pointer address wh
                 str[i] = (char)symb; // writing our symbol in string
                 str[i+1] = '\0'; // adding finishing symbol
                 i++; // next cycle
-        }   
-	*str_p = str; // save to entered pointer address of result string
-	return;
+        }
+        *str_p = str; // save to entered pointer address of result string
+        return;
 }
 
 void task(){
-	printf("Firstfull let's make massive of 3 strings\n");
-	int num = 3;
+	int num = 2;
+	printf("Firstfull let's make massive of %d elements (string)\n", num);
 	char ***massive = (char ***)malloc(sizeof(char**) * num);
 	if (massive == NULL){
 		printf("Error allocating memory for massive\n");
@@ -43,8 +46,7 @@ void task(){
 	}
 	massive = massive_begin;
 	for (int i = 0; i < num; i++){
-		printf("\nmassive #%d: %p, %s", i, *massive, **massive);
-		//free(massive); //free memory of string
+		printf("\nmassive #%d: %s", i, **massive);
 		massive++;
 	}
 	printf("\n");
@@ -74,13 +76,16 @@ void task(){
 	}
 	massive = massive_begin;
         for (int i = 0; i < num; i++){
-                printf("\nmassive #%d: %p, %s", i, *massive, **massive);
-                //free(massive); //free memory of string
+                printf("\nmassive #%d: %s", i, **massive);
+                free(**massive); //free memory of string
+		**massive = NULL;
+		free(*massive); //free memory for pointer on string
+		*massive = NULL;
                 massive++;
         }
 
-
 	free(massive_begin); //free memory of massive
+	massive_begin = NULL;
         return;	
 	}
 
