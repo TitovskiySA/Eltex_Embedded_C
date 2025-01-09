@@ -23,6 +23,7 @@ void enter_dynamic_string(char ** str_p){ //foo saves in this string
                 if (symb == '\n') break; // end of entered string
                 str = realloc(str, (i + 2) * sizeof(char)); // memory for our string + ending symbol
                 symb = getchar(); // enter one char
+		if (symb == '\n') continue;
                 str[i] = (char)symb; // writing our symbol in string
                 str[i+1] = '\0'; // adding finishing symbol
                 i++; // next cycle
@@ -71,7 +72,7 @@ int task(){
 		perror("close1");
 		return 1;
 	}
-dd free and check \n
+
 	//open file  again
 	fd = open(namefile, O_RDONLY);
 	if (fd == -1){
@@ -97,6 +98,10 @@ dd free and check \n
 		perror("close2");
 		return 1;
 	}
+	
+	printf("\n");
+	free(namefile);
+	free(txt_to_wr);
 	return 0;				
 
 }
