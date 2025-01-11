@@ -1,0 +1,14 @@
+titovskiysa@titovskiysa-Extensa-5630:~/Eltex/task_8/task_8.1/libs$ gcc -c -o io.o io.c
+titovskiysa@titovskiysa-Extensa-5630:~/Eltex/task_8/task_8.1/libs$ gcc -c -o calc.o calc.c
+titovskiysa@titovskiysa-Extensa-5630:~/Eltex/task_8/task_8.1/libs$ gcc -c -o helper.o helper.c
+titovskiysa@titovskiysa-Extensa-5630:~/Eltex/task_8/task_8.1/libs$ ar rcs libapp.a calc.o helper.o io.o
+titovskiysa@titovskiysa-Extensa-5630:~/Eltex/task_8/task_8.1/libs$ ar t libapp.a 
+calc.o
+helper.o
+io.o
+titovskiysa@titovskiysa-Extensa-5630:~/Eltex/task_8/task_8.1/libs$ cd ..
+titovskiysa@titovskiysa-Extensa-5630:~/Eltex/task_8/task_8.1$ vim main.c
+titovskiysa@titovskiysa-Extensa-5630:~/Eltex/task_8/task_8.1$ gcc main.c -L./libs -lapp -o main
+titovskiysa@titovskiysa-Extensa-5630:~/Eltex/task_8/task_8.1$ ./main 
+
+
