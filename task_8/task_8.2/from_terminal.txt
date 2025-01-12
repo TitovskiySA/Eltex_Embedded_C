@@ -1,0 +1,28 @@
+titovskiysa@titovskiysa-Extensa-5630:~/Eltex/task_8/task_8.2/libs$ gcc -c -fPIC helper.c -o helper.o
+titovskiysa@titovskiysa-Extensa-5630:~/Eltex/task_8/task_8.2/libs$ gcc -c -fPIC calc.c -o calc.o
+titovskiysa@titovskiysa-Extensa-5630:~/Eltex/task_8/task_8.2/libs$ gcc -c -fPIC io.c -o io.o
+titovskiysa@titovskiysa-Extensa-5630:~/Eltex/task_8/task_8.2/libs$ gcc -shared -o libapp.so helper.o calc.o io.o
+titovskiysa@titovskiysa-Extensa-5630:~/Eltex/task_8/task_8.2/libs$ ls
+calc.c  calc.o    helper.h  io.c  io.o
+calc.h  helper.c  helper.o  io.h  libapp.so
+titovskiysa@titovskiysa-Extensa-5630:~/Eltex/task_8/task_8.2/libs$ cd ..
+titovskiysa@titovskiysa-Extensa-5630:~/Eltex/task_8/task_8.2$ gcc main.c -L./libs -lapp -o main
+titovskiysa@titovskiysa-Extensa-5630:~/Eltex/task_8/task_8.2$ ./main 
+./main: error while loading shared libraries: libapp.so: cannot open shared object file: No such file or directory
+titovskiysa@titovskiysa-Extensa-5630:~/Eltex/task_8/task_8.2$ echo $LD_LIBRARY_PATH // our path is empty
+
+titovskiysa@titovskiysa-Extensa-5630:~/Eltex/task_8/task_8.2$ sudo find / -iname libapp.so
+[sudo] password for titovskiysa: 
+find: ‘/run/user/1000/doc’: Permission denied
+find: ‘/run/user/1000/gvfs’: Permission denied
+/snap/snap-store/1248/bin/lib/libapp.so
+/snap/snap-store/1244/bin/lib/libapp.so
+/snap/firmware-updater/147/bin/lib/libapp.so
+/snap/firmware-updater/127/bin/lib/libapp.so
+/home/titovskiysa/Eltex/task_8/task_8.2/libs/libapp.so  // our path to dyn lib
+/home/titovskiysa/.local/share/Trash/files/libapp.so
+titovskiysa@titovskiysa-Extensa-5630:~/Eltex/task_8/task_8.2$ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/titovskiysa/Eltex/task_8/task_8.2/libs/                 // adding our path to LD_LIBRARY_PATH
+titovskiysa@titovskiysa-Extensa-5630:~/Eltex/task_8/task_8.2$ echo $LD_LIBRARY_PATH
+:/home/titovskiysa/Eltex/task_8/task_8.2/libs/
+titovskiysa@titovskiysa-Extensa-5630:~/Eltex/task_8/task_8.2$ ./main 
+
