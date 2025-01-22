@@ -20,22 +20,39 @@ void writer_process() {
 		exit(EXIT_FAILURE);
 	}
    ssize_t bytes_written;
+   
+   int i = 0, bytes_send;
+   char msgtxt[] = "some message";
+   char messnum[strlen(msgtxt) + 5];
+   //char messnum[100];
+       		
    for (int i = 0; i < num; i ++){
+	   snprintf(messnum, strlen(msgtxt) + 5, "%s_%d", msgtxt, i); // puts string into buffer
 	   // Write the message to the named pipe
-	   if ((bytes_written = write(fd, &i, sizeof(int))) == -1){
+	   if ((bytes_written = write(fd, messnum, sizeof(messnum))) == -1){
+	   //if ((bytes_written = write(fd, &i, sizeof(int))) == -1){
 		   perror("write");
 		   close(fd);
 		   exit(EXIT_FAILURE);
 	   } 
-	   printf("Message sent: %d\n", i);
+	   printf("Message sent: %s (%ld bytes)\n", messnum, bytes_written);
    } 
+   if ((bytes_written = write(fd, "end", sizeof("end"))) == -1){
+   	   //if ((bytes_written = write(fd, &i, sizeof(int))) == -1){	
+	   	   perror("write_end");
+   		   close(fd);
+   		   exit(EXIT_FAILURE);
+   	   } 
    printf("writer process finished\n");
    close(fd);
 }
 
 void reader_process(){
 	int fd, i = 0;
-	int buffer[1];
+	//int buffer[1];
+	//char* buffer = (char *) malloc(100);
+	char buffer[17];
+
     ssize_t bytes_read;
     if((fd = open(FIFO_PATH, O_RDONLY)) == -1){
     		perror("open parent");
@@ -49,17 +66,22 @@ void reader_process(){
 		   exit(EXIT_FAILURE);
 	   }
 	   if (bytes_read == 0){
-		   printf("empty pipe, nothing was written\n");
+		   //printf("empty pipe, nothing was written\n");
+		   continue;
 	   }else{
-		   printf("Message received: %d\n", buffer[0]);
-		   i = buffer[0];
-		   if (i == num - 1){
+		   //buffer[bytes_read] = '\0';
+		   printf("Message received: %s (%ld bytes)\n", buffer, bytes_read);
+		   //printf("Message received: %d\n", buffer[0]);
+		   //i = buffer[0];
+		   //if (i == num - 1){
+		   if (buffer[0] == 'e'){
 		       	printf("received end message\n");
 		       	break;
 		   }
 	   }
     }
     close(fd);
+    //free(buffer);
 }
 
 int main(){
