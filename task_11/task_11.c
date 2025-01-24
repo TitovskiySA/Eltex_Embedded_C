@@ -17,18 +17,24 @@
               the shared memory object */
 
 struct mmapstruct {
-    sem_t sem_rw;                 /* semaphore for regulating rw */
-    sem_t sem_cnt;                /* semaphore for counting messages */
+    sem_t sem_child;                 /* semaphore for childs */
+    sem_t sem_parent;                /* semaphore for parent, when task_done */
     size_t cnt;                   /* len of string buf */
     char buf[BUF_SIZE];         /* Data being transferred */
     size_t cur_char_num;        /* Current number of char */
+    short exit_flag;			/*flag that indicates user wants to quit*/
 };
+
+int routine_foo(struct mmapstruct * mmap_p, char* name){
+	
+	return 0;
+}
 
 int main( int argc, char *argv[] ) //argv for entering some string when starts program
 {
     void *shared_mem = NULL;
     struct mmapstruct *mmap_p = NULL;
-    pid_t child_pid = -1;
+    pid_t child_1_pid, child_2_pid = -1;
     int child_state = -1;
 
     	//check if we entered some string when we start prograam
@@ -47,20 +53,46 @@ int main( int argc, char *argv[] ) //argv for entering some string when starts p
 
     mmap_p = ( struct mmapstruct * ) shared_mem;
 
-    if ( sem_init( &( mmap_p->sem_rw ), 1, 0 ) == -1 )
-        errExit( "sem_init-sem_rw" );
+    if ( sem_init( &( mmap_p->sem_child ), 1, 0 ) == -1 )
+        errExit( "sem_init-sem_child" );
 
-    if ( sem_init( &( mmap_p->sem_cnt ), 1, 0 ) == -1 )
-        errExit( "sem_init-sem_cnt" );
+    if ( sem_init( &( mmap_p->sem_parent ), 1, 0 ) == -1 )
+        errExit( "sem_init-sem_parent" );
 
-    child_pid = fork();
+    if ((child_1_pid = fork()) == -1){
+    	errExit( "child_1_pid fork" );
+    }
     
     //for first child
     if ( child_pid == 0 ) {
-        // parent need to put string into shared memory first
-        if (sem_wait(&(mmap_p->sem_rw)) == -1)
-            errExit("child: waiting for sem_rw_wait");
-       
+    	int res_foo = -1;
+    	char * child_name = "child_1";
+    	
+    	//start of working 
+    	for (;;){
+    		if (mmap_p->exit_flag == 1) { //if exit_flag == 1 we should finish child
+    			break;
+    		}
+    		    	
+    		// parent need to put string into shared memory first, wait semaphore
+    		if (sem_wait(&(mmap_p->sem_child)) == -1){
+    			errExit("child_1: waiting for sem_child");
+    		}
+    		
+    		//check if previous child finished working with buffer
+    		if (mmap_p->cnt == mmap_p->cur_char_num){
+    			printf("child 1 find finish of word");
+    			 if (sem_post(&(mmap_p->sem_parent)) == -1){
+    				 errExit("child_1: sem_parent_post");
+    			 }
+    		}
+    		
+    		// start routine foo (print symbol)
+    		if ((res_foo = routine_foo(mmap_p, child_name)) == -1){
+    			errExit("child_1: routine foo");
+    		}
+    		
+    		FINISH FOR SLEEP THEN WRITE ROOTINE FOO
         // our turn, we print one char from string and sleep for 1 second
         size_t cur_num = mmap_p->cur_char_num;
         printf("first child works with char # %lu = %c", cur_num, (unsigned char) mmap_p->buf[cur_num]);
