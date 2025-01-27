@@ -9,7 +9,7 @@
 #include <time.h>
 
 #define BUF_SIZE 1024 
-//#define max_cycles 3
+#define max_cycles 5
 #define errExit(msg)    do { perror(msg); exit(EXIT_FAILURE); \
                                    } while (0)
 
@@ -29,11 +29,15 @@ struct mmapstruct {
 int routine_foo(struct mmapstruct * mmap_p, char* name, struct timespec t_sleep){
 	if (mmap_p->exit_flag == 1){
 		printf("exit_flag == 1 in routine, exit\n");
+		//post child semaphore for another child
+		if (sem_post(&(mmap_p->sem_child)) == -1){
+			errExit("child: sem_post");
+		}
 		return 0;
 	}
 	// our turn, we print one char from string and sleep for 1 second
 	size_t cur_num = mmap_p->cur_char_num;
-	printf("%s works with char # %lu = %c\n", name, cur_num, (unsigned char) mmap_p->buf[cur_num]);
+	printf("%s imitating hard work with char # %lu = %c\n", name, cur_num, (unsigned char) mmap_p->buf[cur_num]);
 	//increase num
 	mmap_p->cur_char_num += 1;
 	//check if child finished working with buffer
@@ -100,19 +104,17 @@ int main( int argc, char *argv[] ) //argv for entering some string when starts p
     	int res_foo = -1;
     	char * child_name = "child_1";
     	
-    	//printf("%s started\n", child_name);
+    	printf("%s started\n", child_name);
     	//start of working 
     	for (;;){
-    		//printf("cycle child_1\n");
-    		if (mmap_p->exit_flag == 1) { //if exit_flag == 1 we should finish child
-    			break;
-    		}
-    		    	
     		// parent need to put string into shared memory first, wait semaphore
     		if (sem_wait(&(mmap_p->sem_child)) == -1){
     			errExit("child_1: waiting for sem_child");
     		}
-    		//printf("%s locked sem_child\n", child_name);
+    		if (mmap_p->exit_flag == 1) { //if exit_flag == 1 we should finish child
+    		    break;
+    		}
+    		
     		//check if it start of new task we lock semaphore for parent
     		if (mmap_p->cur_char_num == 0){
     			if (sem_wait(&(mmap_p->sem_parent)) == -1){
@@ -126,9 +128,12 @@ int main( int argc, char *argv[] ) //argv for entering some string when starts p
     		}
     	}
     	printf("%s finished\n", child_name);
+    	//at the and post semaphore for another child
+    	if (sem_post(&(mmap_p->sem_child)) == -1){
+    	    errExit("child_1: sem_child_post");
+    	    }
     	return 0;
     }else { // We are the parent, create new child_2 process
-    	//printf("second fork\n");
     	if ((child_2_pid = fork()) == -1){
     		errExit( "child_2_pid fork" );
     	}
@@ -140,13 +145,12 @@ int main( int argc, char *argv[] ) //argv for entering some string when starts p
     	
     	//start of working
     	for (;;){
-    		if (mmap_p->exit_flag == 1) { //if exit_flag == 1 we should finish child
-    	    	break;
-    	    }
-    		//printf("cycle child_2\n");
     		// parent need to put string into shared memory first, wait semaphore
     	    if (sem_wait(&(mmap_p->sem_child)) == -1){
     	    	errExit("child_2: waiting for sem_child");
+    	    }
+    	    if (mmap_p->exit_flag == 1) { //if exit_flag == 1 we should finish child
+    	        break;
     	    }
     	    		
     	    //check if it start of new task we lock semaphore for parent
@@ -162,13 +166,15 @@ int main( int argc, char *argv[] ) //argv for entering some string when starts p
     	    }
     	}
     	printf("%s finished\n", child_name);
+    	// at the and post semaphore for another child
+    	if (sem_post(&(mmap_p->sem_child)) == -1){
+    	    errExit("child_1: sem_child_post");
+    	    }
     	return 0;
     	}else{
-    		//printf("we are parent\n");
     		//we are parent, initialize task
     		int status, cycles = 0;
-    		int max_cycles = 3;
-			if (sem_post(&(mmap_p->sem_parent)) == -1){
+    		if (sem_post(&(mmap_p->sem_parent)) == -1){
 			    errExit("parent: sem_post sem_parent at beginning"); 
 			}
 			if (sem_post(&(mmap_p->sem_child)) == -1){
@@ -189,12 +195,13 @@ int main( int argc, char *argv[] ) //argv for entering some string when starts p
     			memcpy(&mmap_p->buf, string, mmap_p->cnt);
     			//ask user if he wants to quit (1)
     			mmap_p->exit_flag = 0;
-    			//printf("Enter 1 if you want to quit, another number for new cycle\n");
-    			//scanf("%hd", &mmap_p->exit_flag);
+    			printf("Enter 1 if you want to quit, another number for new cycle\n");
+    			scanf("%hd", &mmap_p->exit_flag);
     			printf("user entered %hd\n", mmap_p->exit_flag);
     			
-    			if (cycles == max_cycles){
-    			    mmap_p->exit_flag = 1;
+    			if ((mmap_p->exit_flag == 1) || (cycles == max_cycles)){
+    			//if (mmap_p->exit_flag == 1){
+    				mmap_p->exit_flag = 1;
     			    printf("Waiting for finishing childs\n");
     			    // tell child it can access shared memory.
     			    if (sem_post(&(mmap_p->sem_child)) == -1){
