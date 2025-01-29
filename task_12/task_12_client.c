@@ -33,7 +33,7 @@ void TCP_client(){
 	const char* clnt_mess = "Hello, I am client!";
 	
 	struct timespec t_sleep;
-	t_sleep.tv_sec = 1;
+	t_sleep.tv_sec = 4;
 	t_sleep.tv_nsec = 0;
 	
 	// creating client socket
@@ -71,13 +71,16 @@ void TCP_client(){
 	// wait connection
 	nanosleep(&t_sleep, NULL);
 	
+	// read mess from serv
+	//read(sock_fd, buffer, BUF_SIZE);
+	//printf("server answered: %s\n", buffer);
+	
+	nanosleep(&t_sleep, NULL);
+	sleep(5);
+		
 	// send mess to serv
 	send(sock_fd, clnt_mess, strlen(clnt_mess), 0);
 	printf("Send to server: %s\n", clnt_mess);
-	
-	// read mess from serv
-	read(sock_fd, buffer, BUF_SIZE);
-	printf("server answered: %s\n", buffer);
 	
 	// close sock
 	close(sock_fd);
