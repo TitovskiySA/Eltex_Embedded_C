@@ -1,1 +1,0 @@
-savedcmd_/home/titovskiysa/Eltex/task_13/task_13_mymodule/modules.order := {   echo /home/titovskiysa/Eltex/task_13/task_13_mymodule/mymodule.o; :; } > /home/titovskiysa/Eltex/task_13/task_13_mymodule/modules.order

@@ -1,1 +1,0 @@
-savedcmd_/home/titovskiysa/Eltex/task_13/task_13_mymodule/Module.symvers :=  scripts/mod/modpost -M -m -a      -o /home/titovskiysa/Eltex/task_13/task_13_mymodule/Module.symvers -T /home/titovskiysa/Eltex/task_13/task_13_mymodule/modules.order -i Module.symvers -e 
