@@ -1,0 +1,1 @@
+savedcmd_/home/titovskiysa/Eltex/task_13/task_13_mymodule/mymodule.mod := printf '%s\n'   mymodule.o | awk '!x[$$0]++ { print("/home/titovskiysa/Eltex/task_13/task_13_mymodule/"$$0) }' > /home/titovskiysa/Eltex/task_13/task_13_mymodule/mymodule.mod
