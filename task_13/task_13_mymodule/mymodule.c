@@ -6,6 +6,7 @@
 #include <linux/ioctl.h>		/* for ioctl*/
 #include <linux/proc_fs.h>		/* for procfs */
 #include <linux/kobject.h>		/* for sysfs */
+#include <linux/slab.h>			/* for kalloc */
 
 #include "mymodule_headers.h"
 
@@ -35,12 +36,14 @@ static struct cdev my_device;
 #define DRIVER_CLASS "homework_13_class"
 
 /* some settings of device */
+struct mystruct* module_struct_p;
+/*
 struct mystruct module_struct = {
 		.read_counter = 0,
 		.write_counter = 0,
 		.some_setting = 115200,
 		.device_name = "DEFAULT_NAME"
-};
+};*/
 
 /**
  * @brief Чтение данных из буфера
@@ -52,8 +55,8 @@ static ssize_t driver_read(struct file *File, char *user_buffer, size_t count, l
 	not_copied = copy_to_user(user_buffer, buffer, to_copy);		/* Копирование данных пользователю */
 	delta = to_copy - not_copied;		/* Расчет количества переданных данных */
 	
-	module_struct.read_counter += 1;		/* increase read_counter */
-	printk("mymodule: read - increased read_counter to %d", module_struct.read_counter);
+	module_struct_p->read_counter += 1;		/* increase read_counter */
+	printk("mymodule: read - increased read_counter to %d", module_struct_p->read_counter);
 	printk("now in buffer: %s\n", buffer);
 	return delta;
 }
@@ -69,8 +72,8 @@ static ssize_t driver_write(struct file *File, const char *user_buffer, size_t c
 	buffer_pointer = to_copy;
 	delta = to_copy - not_copied;		/* Расчет количества переданных данных */
 	
-	module_struct.write_counter += 1;		/* increase write_counter */
-	printk("mymodule: write - increased write_counter to %d\n", module_struct.write_counter);
+	module_struct_p->write_counter += 1;		/* increase write_counter */
+	printk("mymodule: write - increased write_counter to %d\n", module_struct_p->write_counter);
 	printk("now in buffer: %s\n", buffer);
 	return delta;
 }
@@ -82,24 +85,26 @@ static long int my_ioctl(struct file *file, unsigned cmd, unsigned long arg) {
 	//struct mystruct module_struct;
 	switch(cmd) {
 		case WR_VALUE: // Write new setting value
-			if(copy_from_user(&(module_struct.some_setting), (int *) arg, sizeof(module_struct.some_setting)))
+			if(copy_from_user(&(module_struct_p->some_setting), (int *) arg, sizeof(module_struct_p->some_setting)))
 				printk("mymodule: my_ioctl_WR_VALUE - Error WR_VALUE!\n");
 			else
-				printk("mymodule: my_ioctl_WR_VALUE - Update the setting value to %d\n", module_struct.some_setting);
+				printk("mymodule: my_ioctl_WR_VALUE - Update the setting value to %d\n", module_struct_p->some_setting);
 			break;
 		case RD_VALUE: // Read current setting value
-			if(copy_to_user((int *) arg, &(module_struct.some_setting), sizeof(module_struct.some_setting)))
+			if(copy_to_user((int *) arg, &(module_struct_p->some_setting), sizeof(module_struct_p->some_setting)))
 				printk("mymodule: my_ioctl_RD_VALUE - Error copying data to user!\n");
 			else
 				printk("mymodule: my_ioctl_RD_VALUE - The some_setting was copied!\n");
 			break;
 		case GREETER: // Entering mystruct all params
-			if(copy_from_user(&module_struct, (struct mystruct *) arg, sizeof(module_struct)))
+			if(copy_from_user(module_struct_p, (struct mystruct *) arg, sizeof(*module_struct_p)))
 				printk("mymodule: my_ioctl_GREETER Error copying data from user!\n");
 			else
-				printk("mymodule: my_ioctl_GREETER - new params updated %d, %d, %d, %s\n", 
-						module_struct.read_counter, module_struct.write_counter,
-						module_struct.some_setting, module_struct.device_name);
+				printk("mymodule: my_ioctl_GREETER: new module_struct in %p\n"
+						"1. read_counter = %d,\n2.write_counter = %d,\n"
+						"3. some_setting = %d,\n4. device_name = %s\n",
+						module_struct_p, module_struct_p->read_counter, module_struct_p->write_counter,
+						module_struct_p->some_setting, module_struct_p->device_name);
 			break;
 	}
 	return 0;
@@ -162,18 +167,19 @@ static ssize_t write_procfs(struct file *File, const char *user_buffer, size_t c
 	return delta;
 }
 
-#ifdef HAVE_PROC_OPS
+//#ifdef HAVE_PROC_OPS
 /* Операции для файла в procfs */
-static struct proc_ops proc_fops = {
+static const struct proc_ops proc_fops = {
 	.proc_read = read_procfs,
 	.proc_write = write_procfs,
 };
+/*
 #else
 static const struct file_operations proc_fops = {
 		.read = read_procfs,
 		.write = write_procfs,
 };
-#endif
+#endif*/
 
 static int create_in_procfs(void){ /* foo for create file if procfs */
 	/* /proc/mymodule_info/mymodule */
@@ -227,6 +233,26 @@ static int create_in_sysfs(void){		/* foo for creating dir and file in sysfs*/
 	return 0;
 }
 
+static int define_struct (void){		/* create and define module_struct */
+	module_struct_p = kzalloc(sizeof(struct mystruct), GFP_KERNEL);
+	if(module_struct_p == NULL) {
+		printk("mymodule: define_struct: kzalloc - Out of memory!\n");
+		return -1;
+	}
+	char name[64] = "DEFAULT_NAME\0";
+	module_struct_p->read_counter = 0;
+	module_struct_p->write_counter = 0;
+	module_struct_p->some_setting = 115200;
+	module_struct_p->device_name = name;
+	
+	printk("mymodule: define_struct: defined module_struct in %p\n"
+			"1. read_counter = %d,\n2.write_counter = %d,\n"
+			"3. some_setting = %d,\n4. device_name = %s\n",
+			module_struct_p, module_struct_p->read_counter, module_struct_p->write_counter,
+			module_struct_p->some_setting, module_struct_p->device_name);
+	return 0;
+}
+
 #define MYMAJOR 64
 
 /**
@@ -251,6 +277,8 @@ static int __init ModuleInit(void) {
 		return -1;
 	if (create_in_sysfs() != 0)
 		return -1;
+	if (define_struct() != 0)
+		return -1;
 	return 0;
 }
 
@@ -266,6 +294,8 @@ static void __exit ModuleExit(void) {
 	sysfs_remove_file(mymodule_kobj, &mymodule_sysfs_attr.attr);
 	kobject_put(mymodule_kobj);
 	printk("mymodule: ModuleExit: Removed /sys/kernel/class/mymodule_device\n");
+	kfree(module_struct_p);
+	module_struct_p = NULL;
 	printk("mymodule: ModuleExit: Bye bye, kernel\n");
 }
 

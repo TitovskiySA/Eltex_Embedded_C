@@ -12,7 +12,8 @@
 
 int main() {
 	int answer;
-	struct mystruct test = {1, 1, 2025, "Eltex_device"};
+	char name[64] = "Eltex_device\0";
+	struct mystruct test = {1, 1, 2025, name};
 	int dev = open("/dev/mydevice", O_RDWR);
 	if(dev == -1) {
 		printf("Opening was not possible!\n");

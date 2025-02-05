@@ -5,7 +5,7 @@ struct mystruct{
 	int read_counter;
 	int write_counter;
 	int some_setting;
-	char device_name[64];
+	char *device_name;
 };
 
 #define WR_VALUE _IOW('a', 'a', int *)
