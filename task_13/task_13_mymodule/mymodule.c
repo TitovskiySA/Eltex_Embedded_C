@@ -5,6 +5,7 @@
 #include <linux/uaccess.h>
 #include <linux/ioctl.h>		/* for ioctl*/
 #include <linux/proc_fs.h>		/* for procfs */
+#include <linux/kobject.h>		/* for sysfs */
 
 #include "mymodule_headers.h"
 
@@ -21,6 +22,9 @@ static size_t buffer_pointer = 0;
 /* Глобальные переменные для создания папки и файла в procfs */
 static struct proc_dir_entry *proc_folder;
 static struct proc_dir_entry *proc_file;
+
+/* Глобальная переменная для папки sysfs hello */
+static struct kobject *mymodule_kobj;
 
 /* Переменные для устройства и его класса */
 static dev_t my_device_nr;
@@ -158,12 +162,18 @@ static ssize_t write_procfs(struct file *File, const char *user_buffer, size_t c
 	return delta;
 }
 
-
+#ifdef HAVE_PROC_OPS
 /* Операции для файла в procfs */
 static struct proc_ops proc_fops = {
 	.proc_read = read_procfs,
 	.proc_write = write_procfs,
 };
+#else
+static const struct file_operations proc_fops = {
+		.read = read_procfs,
+		.write = write_procfs,
+};
+#endif
 
 static int create_in_procfs(void){ /* foo for create file if procfs */
 	/* /proc/mymodule_info/mymodule */
@@ -184,6 +194,38 @@ static int create_in_procfs(void){ /* foo for create file if procfs */
 	return 0;
 }
 
+/* foo reading something from sysfs */ 
+static ssize_t sysfs_show(struct kobject *kobj, struct kobj_attribute *attr, char *buffer) {
+	printk("mymodule: sysfs_show: reading some attr from sysfs\n");
+	return sprintf(buffer, "Read from /sys/kernel/%s/%s\n", kobj->name, attr->attr.name);
+}
+
+/* foo writing something to sysfs */
+static ssize_t sysfs_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buffer, size_t count) {
+	printk("mymodule: sysfs_store: write some value to attr via sysfs\n");
+	printk("sysfs_test - writed '%s' to /sys/kernel/%s/%s\n", buffer, kobj->name, attr->attr.name);
+	return count;
+}
+
+static struct kobj_attribute mymodule_sysfs_attr = __ATTR(mymodule_device, 0660, sysfs_show, sysfs_store); /* sys/class/mymodule_device */
+
+static int create_in_sysfs(void){		/* foo for creating dir and file in sysfs*/
+	/* Создание папки class */
+	mymodule_kobj = kobject_create_and_add("class", kernel_kobj);
+	if(!mymodule_kobj) {
+		printk("mymodule: create)in_sysfs: error on create /sys/kernel/class\n");
+		return -ENOMEM;
+	}
+
+	/* Создание sysfs файла dummy */
+	if(sysfs_create_file(mymodule_kobj, &mymodule_sysfs_attr.attr)) {
+		printk("mymodule: sysfs_create_file: error on create /sys/kernel/class/mymodule_device\n");
+		kobject_put(mymodule_kobj);
+		return -ENOMEM;
+	}
+	printk("mymodule: create_in_sysfs: created /sys/kernel/class/mymodule_device\n");
+	return 0;
+}
 
 #define MYMAJOR 64
 
@@ -207,6 +249,8 @@ static int __init ModuleInit(void) {
 	}
 	if (create_in_procfs() != 0)
 		return -1;
+	if (create_in_sysfs() != 0)
+		return -1;
 	return 0;
 }
 
@@ -219,6 +263,9 @@ static void __exit ModuleExit(void) {
 	proc_remove(proc_file);
 	proc_remove(proc_folder);
 	printk("mymodule: ModuleExit: Removed /proc/mymodule_info/mymodule\n");
+	sysfs_remove_file(mymodule_kobj, &mymodule_sysfs_attr.attr);
+	kobject_put(mymodule_kobj);
+	printk("mymodule: ModuleExit: Removed /sys/kernel/class/mymodule_device\n");
 	printk("mymodule: ModuleExit: Bye bye, kernel\n");
 }
 
