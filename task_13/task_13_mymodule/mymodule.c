@@ -161,19 +161,19 @@ static ssize_t write_procfs(struct file *File, const char *user_buffer, size_t c
 	return delta;
 }
 
-#ifdef HAVE_PROC_OPS
+//#ifdef HAVE_PROC_OPS
 /* Операции для файла в procfs */
 static const struct proc_ops proc_fops = {
 	.proc_read = read_procfs,
 	.proc_write = write_procfs,
 };
-
+/* for work with device on my old linux at work...
 #else
 static const struct file_operations proc_fops = {
 		.read = read_procfs,
 		.write = write_procfs,
 };
-#endif
+#endif*/  
 
 static int create_in_procfs(void){ /* foo for create file if procfs */
 	/* /proc/mymodule_info/mymodule */
