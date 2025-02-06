@@ -51,7 +51,34 @@ int main() {
 
 	ioctl(dev, GREETER, &test);
 
-	printf("Opening was successfull!\n");
+	printf("IOCTL was successfull!\n");
+	
 	close(dev);
+	
+	/* procfs testing */
+	int proc = open("/proc/mymodule_info/mymodule", O_RDWR);
+		if(proc == -1) {
+			printf("Opening procfs file was not possible!\n");
+			return -1;
+		}
+		
+	/* test of write */
+	if (write(proc, txt_to_wr, strlen(txt_to_wr)) == -1){
+		perror("write");
+		close(proc);
+		return 1;
+	}
+	printf("wrote to procfs %s\n", txt_to_wr);
+		
+	/* test of read */
+	if ((bytes_read = read(proc, buffer, sizeof(buffer) - 1)) == -1){
+		perror("read");
+		close(proc);
+		return 1;
+	}
+	buffer[bytes_read] = '\0';
+	printf("read from procfs %s\n", buffer);
+		
+	close(proc);
 	return 0;
 }

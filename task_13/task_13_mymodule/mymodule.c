@@ -7,6 +7,7 @@
 #include <linux/proc_fs.h>		/* for procfs */
 #include <linux/kobject.h>		/* for sysfs */
 #include <linux/slab.h>			/* for kalloc */
+#include <linux/mutex.h>		/* for mutex */
 
 #include "mymodule_headers.h"
 
@@ -17,7 +18,6 @@ MODULE_DESCRIPTION("Homework task 13 Module");
 
 /* Буфер для данных */
 static char buffer[255];
-//static int buffer_pointer = 0;
 static size_t buffer_pointer = 0;
 
 /* Глобальные переменные для создания папки и файла в procfs */
@@ -27,28 +27,17 @@ static struct proc_dir_entry *proc_file;
 /* Глобальная переменная для папки sysfs hello */
 static struct kobject *mymodule_kobj;
 
-/* Переменные для устройства и его класса */
-static dev_t my_device_nr;
-static struct class *my_class;
-static struct cdev my_device;
-
-#define DRIVER_NAME "homework_13_driver"
-#define DRIVER_CLASS "homework_13_class"
+/* DEFINE our mutex */
+static struct mutex lock;
 
 /* some settings of device */
 struct mystruct* module_struct_p;
-/*
-struct mystruct module_struct = {
-		.read_counter = 0,
-		.write_counter = 0,
-		.some_setting = 115200,
-		.device_name = "DEFAULT_NAME"
-};*/
 
 /**
  * @brief Чтение данных из буфера
  */
 static ssize_t driver_read(struct file *File, char *user_buffer, size_t count, loff_t *offs) {
+	mutex_lock(&lock);
 	int to_copy, not_copied, delta;
 
 	to_copy = min(count, buffer_pointer);		/* Определение количества данных для копирования */
@@ -58,6 +47,8 @@ static ssize_t driver_read(struct file *File, char *user_buffer, size_t count, l
 	module_struct_p->read_counter += 1;		/* increase read_counter */
 	printk("mymodule: read - increased read_counter to %d", module_struct_p->read_counter);
 	printk("now in buffer: %s\n", buffer);
+	mutex_unlock(&lock);
+		
 	return delta;
 }
 
@@ -65,6 +56,7 @@ static ssize_t driver_read(struct file *File, char *user_buffer, size_t count, l
  * @brief Запись данных в буфер
  */
 static ssize_t driver_write(struct file *File, const char *user_buffer, size_t count, loff_t *offs) {
+	mutex_lock(&lock);	
 	int to_copy, not_copied, delta;
 
 	to_copy = min(count, sizeof(buffer));		/* Определение количества данных для копирования */
@@ -75,6 +67,7 @@ static ssize_t driver_write(struct file *File, const char *user_buffer, size_t c
 	module_struct_p->write_counter += 1;		/* increase write_counter */
 	printk("mymodule: write - increased write_counter to %d\n", module_struct_p->write_counter);
 	printk("now in buffer: %s\n", buffer);
+	mutex_unlock(&lock);
 	return delta;
 }
 
@@ -82,7 +75,7 @@ static ssize_t driver_write(struct file *File, const char *user_buffer, size_t c
  * @brief Эта функция обрабатывает команды ioctl
  */
 static long int my_ioctl(struct file *file, unsigned cmd, unsigned long arg) {
-	//struct mystruct module_struct;
+	mutex_lock(&lock);		
 	switch(cmd) {
 		case WR_VALUE: // Write new setting value
 			if(copy_from_user(&(module_struct_p->some_setting), (int *) arg, sizeof(module_struct_p->some_setting)))
@@ -101,12 +94,13 @@ static long int my_ioctl(struct file *file, unsigned cmd, unsigned long arg) {
 				printk("mymodule: my_ioctl_GREETER Error copying data from user!\n");
 			else
 				printk("mymodule: my_ioctl_GREETER: new module_struct in %p\n"
-						"1. read_counter = %d,\n2.write_counter = %d,\n"
+						"1. read_counter = %d,\n2. write_counter = %d,\n"
 						"3. some_setting = %d,\n4. device_name = %s\n",
 						module_struct_p, module_struct_p->read_counter, module_struct_p->write_counter,
 						module_struct_p->some_setting, module_struct_p->device_name);
 			break;
 	}
+	mutex_unlock(&lock);
 	return 0;
 }
 
@@ -139,7 +133,7 @@ static struct file_operations fops = {
  * @brief Чтение данных из буфера procfs
  */
 static ssize_t read_procfs(struct file *File, char *user_buffer, size_t count, loff_t *offs) {
-	char text[] = "Hello from procfs!\n";
+	char text[] = "Hello from procfs!";
 	int to_copy, not_copied, delta;
 
 	to_copy = min(count, sizeof(text));
@@ -167,19 +161,19 @@ static ssize_t write_procfs(struct file *File, const char *user_buffer, size_t c
 	return delta;
 }
 
-//#ifdef HAVE_PROC_OPS
+#ifdef HAVE_PROC_OPS
 /* Операции для файла в procfs */
 static const struct proc_ops proc_fops = {
 	.proc_read = read_procfs,
 	.proc_write = write_procfs,
 };
-/*
+
 #else
 static const struct file_operations proc_fops = {
 		.read = read_procfs,
 		.write = write_procfs,
 };
-#endif*/
+#endif
 
 static int create_in_procfs(void){ /* foo for create file if procfs */
 	/* /proc/mymodule_info/mymodule */
@@ -239,6 +233,8 @@ static int define_struct (void){		/* create and define module_struct */
 		printk("mymodule: define_struct: kzalloc - Out of memory!\n");
 		return -1;
 	}
+	
+	mutex_lock(&lock);
 	char name[64] = "DEFAULT_NAME\0";
 	module_struct_p->read_counter = 0;
 	module_struct_p->write_counter = 0;
@@ -246,10 +242,11 @@ static int define_struct (void){		/* create and define module_struct */
 	module_struct_p->device_name = name;
 	
 	printk("mymodule: define_struct: defined module_struct in %p\n"
-			"1. read_counter = %d,\n2.write_counter = %d,\n"
+			"1. read_counter = %d,\n2. write_counter = %d,\n"
 			"3. some_setting = %d,\n4. device_name = %s\n",
 			module_struct_p, module_struct_p->read_counter, module_struct_p->write_counter,
 			module_struct_p->some_setting, module_struct_p->device_name);
+	mutex_unlock(&lock);
 	return 0;
 }
 
@@ -273,6 +270,7 @@ static int __init ModuleInit(void) {
 		printk("mymodule: ModuleInit: Could not register device number!\n");
 		return -1;
 	}
+	mutex_init(&lock);		/* mutex initialize */
 	if (create_in_procfs() != 0)
 		return -1;
 	if (create_in_sysfs() != 0)
