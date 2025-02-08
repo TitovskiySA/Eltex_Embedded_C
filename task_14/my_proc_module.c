@@ -23,13 +23,6 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("TitovskiySA for Eltex School");
 MODULE_DESCRIPTION("Homework task 14 Module");
 
-struct my_node {		/* struct for usage rcu */
-	struct common_status* data;
-	struct rcu_head rcu;
-};
-struct my_node *shared_data = NULL;
-struct my_node *actual_data = NULL;
-
 static struct task_struct *task;        /*    Structure defined in sched.h for tasks/processes    */
 struct common_status* common = NULL;		/* pointer on common structure */
 struct proc_stats* proc_massive = NULL;		/* pointer on massive of proc_stats struct */
@@ -42,11 +35,13 @@ static struct proc_dir_entry *proc_folder;		/* foldef in procfs */
 static struct proc_dir_entry *proc_file;		/* file in procfs */
 
 static spinlock_t my_spinlock;		/* spinlock of our module - uses for block data when write something to our struct */
- 
-static void free_old_node(struct rcu_head *rcu){		/* foo deleting old data */
+
+/*
+static void free_old_node(struct rcu_head *rcu){		
 	struct my_node *old = container_of(rcu, struct my_node, rcu);
 	kfree(old);
 }
+*/
 
 static int find_tasks(void){		/* foo for show active processes */
 	int cycle = 0;		/* val for cycle, and write it into proc_stats.num */
@@ -66,8 +61,8 @@ static int find_tasks(void){		/* foo for show active processes */
     	cur_p->num = cycle;
     	cur_p->pid = task->pid;
     	cur_p->name = task->comm;
-    	//cur_p->status = task->__state;		/* for new kernel */
-    	cur_p->status = task->state;		/* for old kernel */
+    	cur_p->status = task->__state;		/* for new kernel */
+    	//cur_p->status = task->state;		/* for old kernel */
     	cycle ++;
     }
     
@@ -80,22 +75,20 @@ static int find_tasks(void){		/* foo for show active processes */
     cycle_num ++;		/* increase counter of scanning */
     
     spin_lock(&my_spinlock);		/* use spinlock when write data to proc_massive */
-    proc_massive = temp_massive;		/* store temp_massive in our proc_massive */
     
+    proc_massive = temp_massive;		/* store temp_massive in our proc_massive */
+   
     common->cycle = cycle_num;
     common->size = cycle + 1;
     common->proc_struct = proc_massive;
     
-    actual_data->data = common;
-    rcu_assign_pointer(shared_data, actual_data);
-    call_rcu(&actual_data->rcu, free_old_node);
     spin_unlock(&my_spinlock);		/* restore spinlock */
     
     //kfree(old_common);
     //kfree(temp_massive);
     
-    //printk("OVERALL %d cycles, %d proc founded, struct in %p", common->cycle, common->size, common->proc_struct);
-    printk("OVERALL %d cycles, %d proc founded, struct in %p", actual_data->data->cycle, actual_data->data->size, actual_data->data->proc_struct);
+    printk("OVERALL %d cycles, %d proc founded, struct in %p", common->cycle, common->size, common->proc_struct);
+    //printk("OVERALL %d cycles, %d proc founded, struct in %p", actual_data->data->cycle, actual_data->data->size, actual_data->data->proc_struct);
     printk("%sshow_tasks: finished successfully\n", name);
     return 0;
 }      
@@ -130,32 +123,23 @@ static ssize_t read_procfs(struct file *File, char *user_buffer, size_t count, l
 	not_copied = copy_to_user(user_buffer, text, to_copy);
 	delta = to_copy - not_copied;
 	printk("mymodule: read_procfs: read %s\n", text);
-	
-	
-	struct common_status* retval;
-	retval = kzalloc(sizeof(struct my_node), GFP_KERNEL);
-	rcu_read_lock();
-	retval = rcu_dereference(shared_data)->data;
-	rcu_read_unlock();
-	printk("in rcu read cycles = %d", retval->cycle);
-	kfree(retval);
 
 	return delta;
 }
 
-#ifdef HAVE_PROC_OPS
+//#ifdef HAVE_PROC_OPS
 /* Операции для файла в procfs */
 static const struct proc_ops proc_fops = {
 	.proc_read = read_procfs,
 	//.proc_write = write_procfs,
 };
-
+/*
 #else
 static const struct file_operations proc_fops = {
 		.read = read_procfs,
 		//.write = write_procfs,
 };
-#endif
+#endif*/
 
 static int create_in_procfs(void){ /* foo for create file if procfs */
 	/* /proc/mymodule_info/my_proc_module */
@@ -186,16 +170,6 @@ static int __init ModuleInit(void) {
 	    printk("%sModuleInit: kzalloc - Out of memory!\n", name);
 	    return -1;
 	}
-	shared_data = kzalloc(sizeof(struct my_node), GFP_KERNEL);		// pointer on shared_data
-	if(shared_data == NULL) {
-	    printk("%sModuleInit: kzalloc - Out of memory!\n", name);
-	    return -1;
-	}
-	actual_data = kzalloc(sizeof(struct my_node), GFP_KERNEL);		// pointer on common struct
-	if(actual_data == NULL) {
-	    printk("%sModuleInit: kzalloc - Out of memory!\n", name);
-	    return -1;
-	}
 	create_thread();
 	return 0;
 }
@@ -204,14 +178,8 @@ static void __exit ModuleExit(void) {
 	kthread_stop(work_thread); // thread still exists...
 	printk("%smy_proc_module_thread stopped\n", name);
 	
-	data = rcu_dereference_protected(shared_data, 1);
-	if (data){
-		call_rcu(&data->rcu, free_old_node);
-		rcu_assign_pointer(shared_data, NULL);
-	}
-	
-	if (proc_massive != NULL) kfree(proc_massive); 
-	if (common != NULL) kfree(common);
+	//if (proc_massive != NULL) kfree(proc_massive); 
+	//if (common != NULL) kfree(common);
 	
 	proc_remove(proc_file);
 	proc_remove(proc_folder);
