@@ -1,7 +1,6 @@
 #ifndef IOCTL_MY_PROC_MODULE_H
 #define IOCTL_MY_PROC_MODULE_H
-
-#define MAX_PROCESSES_CHECK 100		/* max number processes check */
+#define MAX_PROCESSES_SHOW 100
 
 struct proc_stats{		/* struct for saving one proc parameters */
 	int num;		/* number of this element in massive */
@@ -20,7 +19,7 @@ struct common_status{		/* struct for common proc status */
 struct userspace_stats{		/* userspace struct for read frome procfs */
 	int cycle;		/* number of cycle of scanning */
 	int size;		/* real size of proc_stats */
-	struct proc_stats proc_struct[MAX_PROCESSES_CHECK];		/* userspace massive of struct proc_stats */
+	struct proc_stats proc_struct[MAX_PROCESSES_SHOW];		/* userspace massive of struct proc_stats */
 };
 
 #define START _IOW('a', 'a', int *)

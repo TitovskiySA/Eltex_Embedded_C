@@ -25,7 +25,10 @@ MODULE_DESCRIPTION("Homework task 14 Module");
 
 static struct task_struct *task;        /*    Structure defined in sched.h for tasks/processes    */
 struct common_status* common = NULL;		/* pointer on common structure */
+struct common_status* old_common = NULL;	/* pointer on old common structure */
+
 struct proc_stats* proc_massive = NULL;		/* pointer on massive of proc_stats struct */
+
 static int cycle_num = 0;		/* for counting of scanning cycles */
 static struct task_struct *work_thread;		/* our working thread */
 
@@ -52,11 +55,12 @@ static int find_tasks(void){		/* foo for show active processes */
     	if (cycle == 0)
     		temp_massive = kzalloc(sizeof(struct proc_stats), GFP_KERNEL);		// pointer on massive of struct of cycle +1 elem
     	else
-    		temp_massive = krealloc(proc_massive, sizeof(struct proc_stats) * (cycle + 1), GFP_KERNEL);	
+    		temp_massive = krealloc(temp_massive, sizeof(struct proc_stats) * (cycle + 1), GFP_KERNEL);	
     	if(temp_massive == NULL) {
     		printk("%sshow_tasks: kzalloc - Out of memory!\n", name);
     		return -1;
     	}
+    	
     	cur_p = temp_massive + cycle;
     	cur_p->num = cycle;
     	cur_p->pid = task->pid;
@@ -66,29 +70,25 @@ static int find_tasks(void){		/* foo for show active processes */
     	cycle ++;
     }
     
-    cur_p = temp_massive;
-    /*
+    //cur_p = temp_massive;
+    
     for (int i = 0; i < cycle; i++){
-    	printk("NUM: %d, PID: %d, NAME: %s, STATE: %d", cur_p->num, cur_p->pid, cur_p->name, cur_p->status);
-    	cur_p ++;
-    }*/
+    	printk("NUM: %d, PID: %d, NAME: %s, STATE: %d", temp_massive->num, temp_massive->pid, temp_massive->name, temp_massive->status);
+    	temp_massive ++;
+    }
     cycle_num ++;		/* increase counter of scanning */
     
     spin_lock(&my_spinlock);		/* use spinlock when write data to proc_massive */
     
-    proc_massive = temp_massive;		/* store temp_massive in our proc_massive */
-   
+    //proc_massive = temp_massive;		/* store temp_massive in our proc_massive */
     common->cycle = cycle_num;
-    common->size = cycle + 1;
-    common->proc_struct = proc_massive;
+    common->size = cycle;
+    common->proc_struct = temp_massive;
     
     spin_unlock(&my_spinlock);		/* restore spinlock */
     
-    //kfree(old_common);
-    //kfree(temp_massive);
-    
     printk("OVERALL %d cycles, %d proc founded, struct in %p", common->cycle, common->size, common->proc_struct);
-    //printk("OVERALL %d cycles, %d proc founded, struct in %p", actual_data->data->cycle, actual_data->data->size, actual_data->data->proc_struct);
+    
     printk("%sshow_tasks: finished successfully\n", name);
     return 0;
 }      
@@ -165,21 +165,27 @@ static int __init ModuleInit(void) {
 	spin_lock_init(&my_spinlock);		/* init spinlock */
 	if (create_in_procfs() != 0)
 		return -1;
+	
 	common = kzalloc(sizeof(struct common_status), GFP_KERNEL);		// pointer on common struct
 	if(common == NULL) {
 	    printk("%sModuleInit: kzalloc - Out of memory!\n", name);
 	    return -1;
 	}
+	old_common = kzalloc(sizeof(struct common_status), GFP_KERNEL);		// pointer on old_common struct
+	if(old_common == NULL) {
+		    printk("%sModuleInit: kzalloc - Out of memory!\n", name);
+		    return -1;
+	}
+	
 	create_thread();
 	return 0;
 }
 
 static void __exit ModuleExit(void) {
 	kthread_stop(work_thread); // thread still exists...
-	printk("%smy_proc_module_thread stopped\n", name);
-	
-	//if (proc_massive != NULL) kfree(proc_massive); 
-	//if (common != NULL) kfree(common);
+	printk("%sModuleExit: my_proc_module_thread stopped\n", name);
+	if (common != NULL) kfree(common);
+	printk("%sModuleExit: kfree common\n", name);
 	
 	proc_remove(proc_file);
 	proc_remove(proc_folder);
