@@ -16,6 +16,15 @@ struct common_status{		/* struct for common proc status */
 	//struct rcu_head rcu;		/* for using rcu */
 };
 
+struct my_mod_struct{		/* new struct for module */
+	int cycle;		/* number of cycle of scanning */
+	int size;		/* fact size of massive */
+	int num;		/* number of proc in massive */
+	int pid;		/* pid of proc */
+	char* name;		/* name of proc */
+	int status;		/* status of proc */
+};
+
 struct userspace_stats{		/* userspace struct for read frome procfs */
 	int cycle;		/* number of cycle of scanning */
 	int size;		/* real size of proc_stats */
