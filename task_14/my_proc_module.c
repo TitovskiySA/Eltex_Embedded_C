@@ -63,11 +63,12 @@ void export_tasks(void){		/* foo for export */
 			printk("%sprocesses count more than MAX_PROCESSES_SHOW", name);
 			break;
 		}
+	
+		printk("exported: %d. pid = %d, name = %s, state = %d", 
+				num, task->pid, task->comm, task->__state);
+		proc_num ++;		/* increase global num of processes */
+		num ++;
 	}
-	pr_info("exported: %d. pid = %d, name = %s, state = %ld", 
-			num, task->pid, task->comm, task->state);
-	proc_num ++;		/* increase global num of processes */
-	num ++;		
 }
 EXPORT_SYMBOL(export_tasks);
 
@@ -88,12 +89,12 @@ static int find_tasks(void){		/* foo for show active processes */
 		}
 		params_pid->pid = task->pid;
 		params_pid->name = task->comm;
-		params_pid->status = task->state;
+		params_pid->status = task->__state;
 		rcu_assign_pointer(common[proc_num], params_pid);
 		
 		proc_num++;
-		pr_info("%sfind_tasks: added %d. pid = %d, name = %s, status = %d\n",
-				name, proc_num, params_pid->pid, params_pid->name, params_pid->status);
+		//printk("%sfind_tasks: added %d. pid = %d, name = %s, status = %d\n",
+		//		name, proc_num, params_pid->pid, params_pid->name, params_pid->status);
 	}
 	spin_unlock(&my_spinlock);
 	printk("%sfind tasks finished successfully!\n", name);

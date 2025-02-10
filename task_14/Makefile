@@ -1,4 +1,5 @@
 obj-m += my_proc_module.o
+obj-m += my_export_module.o
 
 PWD := $(CURDIR)
 
